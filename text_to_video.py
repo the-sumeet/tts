@@ -1,14 +1,13 @@
 import json
-from moviepy.editor import TextClip, CompositeVideoClip, ColorClip
 import numpy as np
-from moviepy.editor import TextClip, CompositeVideoClip, concatenate_videoclips,VideoFileClip, ColorClip
+from moviepy.editor import ImageClip, CompositeVideoClip, concatenate_videoclips,VideoFileClip, ColorClip, TextClip, CompositeVideoClip, ColorClip, AudioFileClip
 
 DATA_IN = "./demo.json"
 
 def split_text_into_lines(data):
-    MaxChars = 80
+    MaxChars = 160
     # maxduration in seconds
-    MaxDuration = 3.0
+    MaxDuration = 8
     # Split if nothing is spoken (gap) for these many seconds
     MaxGap = 1.5
 
@@ -73,7 +72,7 @@ for i, word in enumerate(json_data):
 
 linelevel_subtitles = split_text_into_lines(data)
 
-def create_caption(textJSON, framesize, font="Helvetica-Bold", fontsize=80, color='white', bgcolor='blue'):
+def create_caption(textJSON, framesize, font="Roboto-Bold", fontsize=64, color="rgb(64,64,64)", bgcolor="rgb(153,204,255)"):
     wordcount = len(textJSON['textcontents'])
     full_duration = textJSON['end'] - textJSON['start']
 
@@ -86,7 +85,7 @@ def create_caption(textJSON, framesize, font="Helvetica-Bold", fontsize=80, colo
     frame_width = framesize[0]
     frame_height = framesize[1]
     x_buffer = frame_width * 1 / 10
-    y_buffer = frame_height * 1 / 5
+    y_buffer = frame_height * 1 / 3
 
     space_width = ""
     space_height = ""
@@ -149,19 +148,22 @@ def create_caption(textJSON, framesize, font="Helvetica-Bold", fontsize=80, colo
 
     return word_clips
 
-frame_size = (1080,1080)
+# width, height
+frame_size = (1080,1920)
 all_linelevel_splits=[]
 
 for line in linelevel_subtitles:
   out = create_caption(line,frame_size)
   all_linelevel_splits.extend(out)
 
+audio = AudioFileClip("demo.mp3")
 # Load the input video
-input_video = VideoFileClip('big_buck_bunny_1080p_surround.avi')
+# input_video = VideoFileClip('big_buck_bunny_1080p_surround.avi')
 # Get the duration of the input video
-input_video_duration = input_video.duration
+# input_video_duration = input_video.duration
 # Create a color clip with the given frame size, color, and duration
-background_clip = ColorClip(size=frame_size, color=(0, 0, 0)).set_duration(input_video_duration)
+background_clip = ColorClip(size=frame_size, color=(255, 0, 0)).set_duration(audio.duration)
+background_clip = ImageClip('background.png').set_duration(audio.duration)
 
 # If you want to overlay this on the original video uncomment this and also change frame_size, font size and color accordingly.
 # final_video = CompositeVideoClip([input_video] + all_linelevel_splits)
@@ -169,7 +171,7 @@ background_clip = ColorClip(size=frame_size, color=(0, 0, 0)).set_duration(input
 final_video = CompositeVideoClip([background_clip] + all_linelevel_splits)
 
 # Set the audio of the final video to be the same as the input video
-final_video = final_video.set_audio(input_video.audio)
+final_video = final_video.set_audio(audio)
 
 # Save the final clip as a video file with the audio included
 final_video.write_videofile("output.mp4", fps=24, codec="libx264", audio_codec="aac")
